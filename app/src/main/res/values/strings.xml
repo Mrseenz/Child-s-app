@@ -45,4 +45,26 @@
     <string name="error_map_fragment_not_found">Error: Map Fragment not found.</string>
     <string name="view_on_map_button_text">View on Map</string>
 
+    <!-- RegisterActivity -->
+    <string name="create_parent_account_title">Create Parent Account</string>
+    <string name="register_email_hint">Email Address</string>
+    <string name="register_password_hint">Password (min. 6 characters)</string>
+    <string name="register_confirm_password_hint">Confirm Password</string>
+    <string name="register_button_text">Register</string>
+    <string name="login_link_text">Already have an account? Login</string>
+    <string name="registration_successful_toast">Registration successful!</string>
+    <string name="registration_failed_toast">Registration failed: %1$s</string>
+    <string name="password_too_short_toast">Password is too short (minimum 6 characters).</string>
+    <string name="passwords_do_not_match_toast">Passwords do not match.</string>
+    <string name="invalid_email_toast">Invalid email format.</string>
+
+    <!-- LoginActivity Updates -->
+    <string name="register_link_text">Don\'t have an account? Register</string>
+    <string name="login_failed_toast">Login failed: %1$s</string>
+    <string name="email_not_verified_toast">Email not verified. Please check your inbox.</string> <!-- If email verification is added later -->
+    <string name="logout_successful_toast">Logged out successfully.</string>
+    <string name="activity_title_register">Register Account</string>
+    <string name="action_logout">Logout</string>
+
+
 </resources>

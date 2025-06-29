@@ -24,6 +24,9 @@
         <activity android:name=".MapViewActivity"
             android:label="@string/activity_title_map_view"/>
 
+        <activity android:name=".RegisterActivity"
+            android:label="@string/activity_title_register"/>
+
         <!-- Google Maps API Key -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"

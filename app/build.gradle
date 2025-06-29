@@ -52,8 +52,8 @@ dependencies {
     // Firebase Firestore
     implementation 'com.google.firebase:firebase-firestore'
 
-    // Firebase Authentication (if we decide to use it for parent login later)
-    // implementation 'com.google.firebase:firebase-auth'
+    // Firebase Authentication
+    implementation 'com.google.firebase:firebase-auth'
 
     // Google Maps SDK
     implementation 'com.google.android.gms:play-services-maps:18.0.0' // Use recent version
