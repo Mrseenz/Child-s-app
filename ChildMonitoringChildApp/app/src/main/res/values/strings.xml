@@ -35,5 +35,26 @@
     <string name="background_location_denied_message">Background location access denied. Reporting may be limited when app is not in use.</string>
     <string name="location_permission_denied_generic_message">Location permission denied. Please grant location permission first.</string>
 
+    <!-- Call Log Monitoring Toggle -->
+    <string name="enable_call_log_monitoring_switch">Enable Call Log Monitoring</string>
+    <string name="call_log_permission_needed_for_monitoring">Call Log permission is needed to enable monitoring.</string>
+    <string name="call_log_permission_granted_toast">Call Log permission granted.</string>
+    <string name="call_log_permission_denied_toast">Call Log permission denied. Call logs cannot be monitored.</string>
+    <string name="call_log_monitoring_enabled_toast">Call Log Monitoring Enabled.</string>
+    <string name="call_log_monitoring_disabled_toast">Call Log Monitoring Disabled.</string>
+
+    <!-- SMS Log Monitoring Toggle -->
+    <string name="enable_sms_log_monitoring_switch">Enable SMS Log Monitoring</string>
+    <string name="sms_permission_granted_toast">SMS permission granted.</string>
+    <string name="sms_permission_denied_toast">SMS permission denied. SMS logs cannot be monitored.</string>
+    <string name="sms_log_monitoring_enabled_toast">SMS Log Monitoring Enabled.</string>
+    <string name="sms_log_monitoring_disabled_toast">SMS Log Monitoring Disabled.</string>
+
+    <!-- Contacts Sync Toggle -->
+    <string name="enable_contacts_sync_switch">Enable Contacts Sync</string>
+    <string name="contacts_permission_granted_toast">Contacts permission granted.</string>
+    <string name="contacts_permission_denied_toast">Contacts permission denied. Contacts cannot be synced.</string>
+    <string name="contacts_sync_enabled_toast">Contacts Sync Enabled.</string>
+    <string name="contacts_sync_disabled_toast">Contacts Sync Disabled.</string>
 
 </resources>

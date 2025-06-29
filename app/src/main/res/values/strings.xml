@@ -112,4 +112,14 @@
     <string name="pairing_code_generation_failed_toast">Failed to generate pairing code: %1$s</string>
     <string name="pairing_code_generated_toast">Pairing code generated.</string>
 
+    <!-- Call Log Item -->
+    <string name="call_type_icon_description">Call type icon</string>
+
+    <!-- ViewCallLogsActivity -->
+    <string name="view_call_logs_button_text">View Call Logs</string>
+    <string name="title_activity_view_call_logs">Call Logs for %1$s</string>
+    <string name="no_call_logs_found">No call logs found for this child.</string>
+    <string name="error_fetching_call_logs">Error fetching call logs: %1$s</string>
+    <string name="call_log_item_type_label">Type: </string>
+
 </resources>

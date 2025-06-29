@@ -24,6 +24,15 @@
     <!-- Notification Permission (for Android 13+ / API 33+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
+    <!-- Call Log Permission -->
+    <uses-permission android:name="android.permission.READ_CALL_LOG" />
+
+    <!-- SMS Permission -->
+    <uses-permission android:name="android.permission.READ_SMS" />
+
+    <!-- Contacts Permission -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+
 
     <application
         android:allowBackup="true"
