@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:background="?android:attr/selectableItemBackground">
+
+    <TextView
+        android:id="@+id/textViewContactDisplayName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        tools:text="Contact Name Here"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="4dp"/>
+
+    <TextView
+        android:id="@+id/textViewContactPhoneNumbers"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        tools:text="Mobile: 555-1234\nHome: 555-5678"
+        android:textSize="14sp"
+        android:textColor="?android:attr/textColorSecondary"
+        android:lineSpacingMultiplier="1.2"/>
+
+    <!-- Optional: Placeholder for contactId if needed for debugging or other actions
+    <TextView
+        android:id="@+id/textViewContactIdDebug"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        tools:text="ID: 101"
+        android:textSize="10sp"
+        android:visibility="gone"/>
+     -->
+
+</LinearLayout>

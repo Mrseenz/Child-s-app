@@ -53,7 +53,8 @@ public class ChildAdapter extends ArrayAdapter<Child> {
         Button buttonViewChildMap = listItem.findViewById(R.id.buttonViewChildMap);
         Button buttonPairDevice = listItem.findViewById(R.id.buttonPairDevice);
         Button buttonViewCallLogs = listItem.findViewById(R.id.buttonViewCallLogs);
-        Button buttonViewSmsLogs = listItem.findViewById(R.id.buttonViewSmsLogs); // New button
+        Button buttonViewSmsLogs = listItem.findViewById(R.id.buttonViewSmsLogs);
+        Button buttonViewContacts = listItem.findViewById(R.id.buttonViewContacts); // New button
 
         buttonEdit.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -292,6 +293,16 @@ import android.widget.LinearLayout;
                 Intent intent = new Intent(mContext, ViewSmsLogsActivity.class);
                 intent.putExtra(ViewSmsLogsActivity.EXTRA_DEVICE_ID, currentChild.getDeviceId());
                 intent.putExtra(ViewSmsLogsActivity.EXTRA_CHILD_NAME, currentChild.getName());
+                mContext.startActivity(intent);
+            }
+        });
+
+        buttonViewContacts.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(mContext, ViewContactsActivity.class);
+                intent.putExtra(ViewContactsActivity.EXTRA_DEVICE_ID, currentChild.getDeviceId());
+                intent.putExtra(ViewContactsActivity.EXTRA_CHILD_NAME, currentChild.getName());
                 mContext.startActivity(intent);
             }
         });

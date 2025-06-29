@@ -86,4 +86,12 @@
         android:text="@string/view_sms_logs_button_text"
         android:layout_marginTop="8dp"/>
 
+    <Button
+        android:id="@+id/buttonViewContacts"
+        style="?android:attr/buttonBarButtonStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/view_contacts_button_text"
+        android:layout_marginTop="8dp"/>
+
 </LinearLayout>

@@ -136,5 +136,12 @@
     <string name="error_device_id_missing">Error: Device ID missing.</string> <!-- Generic, can be reused -->
     <string name="view_sms_logs_button_text">View SMS Logs</string>
 
+    <!-- ViewContactsActivity & Item -->
+    <string name="title_activity_view_contacts">Contacts for %1$s</string>
+    <string name="no_contacts_synced">No contacts synced or found for this child.</string>
+    <string name="error_fetching_contacts">Error fetching contacts: %1$s</string>
+    <string name="last_synced_label">Last Synced: </string>
+    <string name="no_phone_numbers_available">No phone numbers available.</string> <!-- From ContactEntry POJO -->
+    <string name="view_contacts_button_text">View Contacts</string>
 
 </resources>
