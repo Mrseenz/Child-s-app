@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:background="?android:attr/selectableItemBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:id="@+id/imageViewSmsType"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginEnd="8dp"
+            android:contentDescription="@string/sms_type_icon_description"
+            tools:src="@android:drawable/sym_action_email" /> <!-- Placeholder icon -->
+
+        <TextView
+            android:id="@+id/textViewSmsAddress"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            tools:text="+1234567890"
+            android:textSize="16sp"
+            android:textStyle="bold"/>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/textViewSmsDate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        tools:text="Tue, 02 Jan 2023, 03:45 PM"
+        android:textSize="12sp"
+        android:textColor="?android:attr/textColorSecondary"
+        android:layout_marginTop="4dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="4dp">
+
+        <TextView
+            android:id="@+id/textViewSmsTypeLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            tools:text="Type: Inbox"
+            android:textSize="12sp"
+            android:textStyle="italic"
+            android:layout_marginEnd="16dp"/>
+
+        <TextView
+            android:id="@+id/textViewSmsBodyLength"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            tools:text="Length: 120 chars"
+            android:textSize="12sp"
+            android:textStyle="italic"
+            android:layout_marginEnd="16dp"/>
+
+        <TextView
+            android:id="@+id/textViewSmsReadStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            tools:text="Status: Read"
+            android:textSize="12sp"
+            android:textStyle="italic"/>
+    </LinearLayout>
+
+</LinearLayout>

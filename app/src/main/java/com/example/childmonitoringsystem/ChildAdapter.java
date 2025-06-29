@@ -52,7 +52,8 @@ public class ChildAdapter extends ArrayAdapter<Child> {
         Button buttonSendNotification = listItem.findViewById(R.id.buttonSendNotification);
         Button buttonViewChildMap = listItem.findViewById(R.id.buttonViewChildMap);
         Button buttonPairDevice = listItem.findViewById(R.id.buttonPairDevice);
-        Button buttonViewCallLogs = listItem.findViewById(R.id.buttonViewCallLogs); // New button
+        Button buttonViewCallLogs = listItem.findViewById(R.id.buttonViewCallLogs);
+        Button buttonViewSmsLogs = listItem.findViewById(R.id.buttonViewSmsLogs); // New button
 
         buttonEdit.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -284,5 +285,15 @@ import android.widget.LinearLayout;
                     Toast.makeText(mContext, mContext.getString(R.string.pairing_code_generation_failed_toast, errorMessage), Toast.LENGTH_LONG).show();
                 }
             });
+
+        buttonViewSmsLogs.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(mContext, ViewSmsLogsActivity.class);
+                intent.putExtra(ViewSmsLogsActivity.EXTRA_DEVICE_ID, currentChild.getDeviceId());
+                intent.putExtra(ViewSmsLogsActivity.EXTRA_CHILD_NAME, currentChild.getName());
+                mContext.startActivity(intent);
+            }
+        });
     }
 }
