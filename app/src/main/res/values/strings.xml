@@ -89,4 +89,15 @@
     <string name="location_data_incomplete">Location data incomplete.</string>
     <string name="no_location_data_available">No location data available for %1$s.</string>
 
+    <!-- Send Notification Dialog (Parent App) -->
+    <string name="send_notification_dialog_title">Send Notification to %1$s</string>
+    <string name="notification_title_hint">Notification Title</string>
+    <string name="notification_message_hint">Notification Message</string>
+    <string name="dialog_button_send">Send</string>
+    <string name="dialog_button_cancel">Cancel</string>
+    <string name="notification_title_required">Title is required.</string>
+    <string name="notification_message_required">Message is required.</string>
+    <string name="notification_sent_successfully_toast">Notification sent successfully.</string>
+    <string name="notification_send_failed_toast">Failed to send notification: %1$s</string>
+
 </resources>

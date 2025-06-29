@@ -39,6 +39,9 @@ dependencies {
     // Firebase Firestore
     implementation 'com.google.firebase:firebase-firestore'
 
+    // Firebase Cloud Messaging
+    implementation 'com.google.firebase:firebase-messaging'
+
     // Firebase Authentication (if needed later for more secure child app registration/auth)
     // implementation 'com.google.firebase:firebase-auth'
 

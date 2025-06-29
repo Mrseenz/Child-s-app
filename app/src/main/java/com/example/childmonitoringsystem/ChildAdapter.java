@@ -100,16 +100,19 @@ public class ChildAdapter extends ArrayAdapter<Child> {
             }
         });
 
+import com.google.firebase.functions.FirebaseFunctions;
+import com.google.firebase.functions.HttpsCallableResult;
+import com.google.android.gms.tasks.Task;
+import android.text.InputType;
+import android.widget.LinearLayout;
+// ... other imports ...
+
+// ... inside ChildAdapter class ...
+
         buttonSendNotification.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // TODO: Implement actual notification sending (e.g., via FCM)
-                // This would require child's device token, server-side logic, etc.
-                String notificationMessage = mContext.getString(R.string.sending_mock_notification_toast_format, currentChild.getName());
-                Toast.makeText(mContext, notificationMessage, Toast.LENGTH_LONG).show();
-
-                // Example of what might be sent:
-                // sendNotificationToServer(currentChild.getDeviceId(), "Your custom message here");
+                showSendNotificationDialog(currentChild);
             }
         });
 
@@ -120,4 +123,81 @@ public class ChildAdapter extends ArrayAdapter<Child> {
     // private Context getAdapterContext() { // Not strictly needed as mContext is available
     //     return mContext;
     // }
+
+    private void showSendNotificationDialog(final Child child) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
+        builder.setTitle(mContext.getString(R.string.send_notification_dialog_title, child.getName()));
+
+        LinearLayout layout = new LinearLayout(mContext);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(50, 50, 50, 50); // Add some padding
+
+        final EditText titleInput = new EditText(mContext);
+        titleInput.setHint(R.string.notification_title_hint);
+        titleInput.setInputType(InputType.TYPE_CLASS_TEXT);
+        layout.addView(titleInput);
+
+        final EditText messageInput = new EditText(mContext);
+        messageInput.setHint(R.string.notification_message_hint);
+        messageInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+        messageInput.setMinLines(2);
+        layout.addView(messageInput);
+
+        builder.setView(layout);
+
+        builder.setPositiveButton(R.string.dialog_button_send, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                String title = titleInput.getText().toString().trim();
+                String message = messageInput.getText().toString().trim();
+
+                if (title.isEmpty()) {
+                    Toast.makeText(mContext, R.string.notification_title_required, Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                if (message.isEmpty()) {
+                    Toast.makeText(mContext, R.string.notification_message_required, Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                callSendNotificationFunction(child.getDeviceId(), title, message);
+            }
+        });
+        builder.setNegativeButton(R.string.dialog_button_cancel, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+        builder.show();
+    }
+
+    private void callSendNotificationFunction(String targetDeviceId, String title, String message) {
+        FirebaseFunctions functions = FirebaseFunctions.getInstance();
+
+        java.util.Map<String, Object> data = new java.util.HashMap<>();
+        data.put("targetDeviceId", targetDeviceId);
+        data.put("messageTitle", title);
+        data.put("messageBody", message);
+        // data.put("push", true); // Not needed if function is .onCall, but good for .onRequest
+
+        functions
+            .getHttpsCallable("sendNotification") // Name of your Cloud Function
+            .call(data)
+            .addOnCompleteListener(new com.google.android.gms.tasks.OnCompleteListener<HttpsCallableResult>() {
+                @Override
+                public void onComplete(@NonNull Task<HttpsCallableResult> task) {
+                    if (task.isSuccessful()) {
+                        // HttpsCallableResult result = task.getResult();
+                        // java.util.Map<String, Object> resultData = (java.util.Map<String, Object>) result.getData();
+                        // Log.d("ChildAdapter", "Cloud function result: " + resultData);
+                        Toast.makeText(mContext, R.string.notification_sent_successfully_toast, Toast.LENGTH_SHORT).show();
+                    } else {
+                        Exception e = task.getException();
+                        android.util.Log.e("ChildAdapter", "Error calling cloud function", e);
+                        String errorMessage = e != null ? e.getMessage() : "Unknown error";
+                        Toast.makeText(mContext, mContext.getString(R.string.notification_send_failed_toast, errorMessage), Toast.LENGTH_LONG).show();
+                    }
+                }
+            });
+    }
 }

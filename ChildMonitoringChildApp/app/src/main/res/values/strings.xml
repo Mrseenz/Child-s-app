@@ -16,4 +16,8 @@
     <string name="notification_channel_name">Location Service</string>
     <string name="notification_channel_description">Channel for the location reporting foreground service.</string>
 
+    <!-- FCM Notification Channel -->
+    <string name="fcm_notification_channel_name">General Notifications</string>
+    <string name="fcm_notification_channel_description">Channel for general app notifications and messages.</string>
+
 </resources>

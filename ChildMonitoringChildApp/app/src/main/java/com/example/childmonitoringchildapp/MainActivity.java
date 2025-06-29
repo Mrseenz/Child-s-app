@@ -33,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 101;
     private static final int BACKGROUND_LOCATION_PERMISSION_REQUEST_CODE = 102;
+    private static final int NOTIFICATION_PERMISSION_REQUEST_CODE = 103;
 
 
     private static final String PREFS_NAME = "ChildAppPrefs";
@@ -61,6 +62,7 @@ public class MainActivity extends AppCompatActivity {
         // This could involve the service writing its state to SharedPreferences or using a static flag.
         // For now, 'isServiceRunning' only reflects UI interactions within this activity instance.
         updateUIBasedOnServiceState();
+        requestNotificationPermissionIfNeeded(); // Request notification permission
 
         buttonToggleService.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -170,27 +172,43 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Fine location granted, now check/request background if needed
-                checkBackgroundLocationAndStartService();
-            } else {
-                Toast.makeText(this, getString(R.string.location_permission_denied_toast), Toast.LENGTH_SHORT).show();
-            }
-        } else if (requestCode == BACKGROUND_LOCATION_PERMISSION_REQUEST_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                startLocationService(); // Background location granted
-            } else {
-                Toast.makeText(this, "Background location access denied. Reporting may be limited when app is not in use.", Toast.LENGTH_LONG).show();
-                // Decide if you still want to start the service with foreground-only capabilities
-                // Or guide user to app settings if "Don't ask again" was selected.
-                // For now, we'll let startLocationService run if fine location was already granted.
-                if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                     startLocationService(); // Start with foreground permission
+        switch (requestCode) {
+            case LOCATION_PERMISSION_REQUEST_CODE:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    checkBackgroundLocationAndStartService();
                 } else {
-                    // This case should ideally not be hit if fine location is checked first.
-                     Toast.makeText(this, getString(R.string.location_permission_denied_toast) + " Please grant location permission first.", Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, getString(R.string.location_permission_denied_toast), Toast.LENGTH_SHORT).show();
                 }
+                break;
+            case BACKGROUND_LOCATION_PERMISSION_REQUEST_CODE:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    startLocationService();
+                } else {
+                    Toast.makeText(this, "Background location access denied. Reporting may be limited when app is not in use.", Toast.LENGTH_LONG).show();
+                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                        startLocationService(); // Start with foreground permission if background denied
+                    }
+                }
+                break;
+            case NOTIFICATION_PERMISSION_REQUEST_CODE:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(this, "Notification permission granted.", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, "Notification permission denied. You may not receive important updates.", Toast.LENGTH_LONG).show();
+                }
+                break;
+        }
+    }
+
+    private void requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // TIRAMISU is API 33
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
+                    PackageManager.PERMISSION_GRANTED) {
+                // Show rationale if needed, then request
+                // For simplicity, directly requesting. A real app should show rationale.
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                        NOTIFICATION_PERMISSION_REQUEST_CODE);
             }
         }
     }
