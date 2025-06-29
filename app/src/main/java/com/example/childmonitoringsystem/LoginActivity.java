@@ -70,7 +70,7 @@ public class LoginActivity extends AppCompatActivity {
         String password = editTextPassword.getText().toString().trim();
 
         if (TextUtils.isEmpty(email)) {
-            editTextEmail.setError("Email is required.");
+            editTextEmail.setError(getString(R.string.error_email_required));
             editTextEmail.requestFocus();
             return;
         }
@@ -82,7 +82,7 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         if (TextUtils.isEmpty(password)) {
-            editTextPassword.setError("Password is required.");
+            editTextPassword.setError(getString(R.string.error_password_required));
             editTextPassword.requestFocus();
             return;
         }

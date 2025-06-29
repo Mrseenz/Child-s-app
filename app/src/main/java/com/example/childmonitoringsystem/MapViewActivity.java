@@ -41,7 +41,7 @@ public class MapViewActivity extends AppCompatActivity implements OnMapReadyCall
 
         if (deviceIdToTrack == null || deviceIdToTrack.isEmpty()) {
             Log.e(TAG, "No device ID provided to track.");
-            Toast.makeText(this, "Error: No Device ID specified for tracking.", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.error_no_device_id_for_map), Toast.LENGTH_LONG).show();
             finish(); // Close activity if no device ID
             return;
         }
@@ -118,8 +118,11 @@ public class MapViewActivity extends AppCompatActivity implements OnMapReadyCall
                         childMarker.remove(); // Remove marker if document is deleted or doesn't exist
                         childMarker = null;
                     }
-                    // Toast.makeText(MapViewActivity.this, "No location data available for " + deviceId, Toast.LENGTH_SHORT).show();
-                    // Optionally move camera to a default location or show a message
+                    Toast.makeText(MapViewActivity.this, getString(R.string.no_location_data_available, deviceId), Toast.LENGTH_SHORT).show();
+                    // If no marker, means no location, set a default view
+                    if (childMarker == null && mMap != null) {
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(0, 0), 1f)); // World view
+                    }
                 }
             });
     }

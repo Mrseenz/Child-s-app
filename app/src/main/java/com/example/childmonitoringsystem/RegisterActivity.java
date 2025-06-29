@@ -63,7 +63,7 @@ public class RegisterActivity extends AppCompatActivity {
         String confirmPassword = editTextConfirmPassword.getText().toString().trim();
 
         if (TextUtils.isEmpty(email)) {
-            editTextEmail.setError("Email is required.");
+            editTextEmail.setError(getString(R.string.error_email_required));
             editTextEmail.requestFocus();
             return;
         }
@@ -75,7 +75,7 @@ public class RegisterActivity extends AppCompatActivity {
         }
 
         if (TextUtils.isEmpty(password)) {
-            editTextPassword.setError("Password is required.");
+            editTextPassword.setError(getString(R.string.error_password_required));
             editTextPassword.requestFocus();
             return;
         }
@@ -87,7 +87,7 @@ public class RegisterActivity extends AppCompatActivity {
         }
 
         if (TextUtils.isEmpty(confirmPassword)) {
-            editTextConfirmPassword.setError("Confirm password is required.");
+            editTextConfirmPassword.setError(getString(R.string.error_confirm_password_required));
             editTextConfirmPassword.requestFocus();
             return;
         }
@@ -121,11 +121,11 @@ public class RegisterActivity extends AppCompatActivity {
                             try {
                                 throw task.getException();
                             } catch (FirebaseAuthWeakPasswordException e) {
-                                errorMessage = "Weak password. " + e.getMessage();
+                                errorMessage = getString(R.string.error_weak_password);
                             } catch (FirebaseAuthUserCollisionException e) {
-                                errorMessage = "This email is already registered. Please login.";
+                                errorMessage = getString(R.string.error_email_already_registered);
                             } catch (Exception e) {
-                                errorMessage = e.getMessage();
+                                errorMessage = e.getMessage() != null ? e.getMessage() : "An unknown error occurred.";
                             }
                             Toast.makeText(getApplicationContext(), getString(R.string.registration_failed_toast, errorMessage), Toast.LENGTH_LONG).show();
                         }

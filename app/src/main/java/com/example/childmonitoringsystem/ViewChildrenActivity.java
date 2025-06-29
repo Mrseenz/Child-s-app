@@ -68,7 +68,6 @@ public class ViewChildrenActivity extends AppCompatActivity {
     // Note: onResume now calls loadChildrenData which handles adapter refresh.
     // The old onResume logic is removed.
 
-    // TODO: Add methods to handle data persistence (saving/loading children) - This is now handled by ChildPersistenceManager
-    // For example, using SharedPreferences or a local SQLite database.
-    // When a child is deleted in the adapter, the actual data source needs to be updated.
+    // Data persistence (saving/loading children) is handled by ChildPersistenceManager.
+    // When a child is deleted in the adapter, ChildPersistenceManager updates the data source.
 }

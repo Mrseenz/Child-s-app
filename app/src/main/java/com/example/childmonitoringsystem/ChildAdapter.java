@@ -75,8 +75,8 @@ public class ChildAdapter extends ArrayAdapter<Child> {
             @Override
             public void onClick(View v) {
                 new AlertDialog.Builder(mContext)
-                    .setTitle("Confirm Delete")
-                    .setMessage("Are you sure you want to delete " + currentChild.getName() + "?")
+                    .setTitle(mContext.getString(R.string.confirm_delete_dialog_title))
+                    .setMessage(mContext.getString(R.string.confirm_delete_dialog_message, currentChild.getName()))
                     .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int which) {
                             ChildPersistenceManager.deleteChild(mContext.getApplicationContext(), currentChild);

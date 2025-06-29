@@ -61,24 +61,36 @@ public class AddChildActivity extends AppCompatActivity {
         Child currentChildDetails = new Child(childName, childDeviceID);
 
         if (isEditMode) {
-            Child originalChild = new Child("", originalDeviceIdToEdit); // Create a shell Child object with the original ID for lookup
+            // If in edit mode and the device ID was changed, check if the new ID conflicts with another existing child.
+            if (!originalDeviceIdToEdit.equals(childDeviceID)) {
+                List<Child> existingChildren = ChildPersistenceManager.loadChildren(getApplicationContext());
+                for (Child existingChild : existingChildren) {
+                    if (existingChild.getDeviceId().equals(childDeviceID)) {
+                        // Conflict found with another child (not the one being edited)
+                        Toast.makeText(AddChildActivity.this, getString(R.string.child_device_id_exists_toast, childDeviceID), Toast.LENGTH_LONG).show();
+                        return; // Prevent update
+                    }
+                }
+            }
+
+            Child originalChild = new Child("", originalDeviceIdToEdit); // Use originalDeviceIdToEdit to find the child to update.
             boolean updated = ChildPersistenceManager.updateChild(getApplicationContext(), originalChild, currentChildDetails);
             if (updated) {
-                Toast.makeText(AddChildActivity.this, childName + " updated.", Toast.LENGTH_SHORT).show();
-                finish(); // Go back after successful update
+                Toast.makeText(AddChildActivity.this, getString(R.string.child_updated_toast, childName), Toast.LENGTH_SHORT).show();
+                finish();
             } else {
-                Toast.makeText(AddChildActivity.this, "Error updating " + childName, Toast.LENGTH_SHORT).show();
+                Toast.makeText(AddChildActivity.this, getString(R.string.child_update_error_toast, childName), Toast.LENGTH_SHORT).show();
             }
         } else {
             // Check if child with this device ID already exists before adding
             List<Child> existingChildren = ChildPersistenceManager.loadChildren(getApplicationContext());
             if (existingChildren.contains(currentChildDetails)) { // Relies on Child.equals()
-                Toast.makeText(AddChildActivity.this, "Child with Device ID " + childDeviceID + " already exists.", Toast.LENGTH_LONG).show();
+                Toast.makeText(AddChildActivity.this, getString(R.string.child_device_id_exists_toast, childDeviceID), Toast.LENGTH_LONG).show();
                 return;
             }
 
             ChildPersistenceManager.addChild(getApplicationContext(), currentChildDetails);
-            Toast.makeText(AddChildActivity.this, childName + " added.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(AddChildActivity.this, getString(R.string.child_added_toast, childName), Toast.LENGTH_SHORT).show();
             finish(); // Go back after successful add
         }
     }

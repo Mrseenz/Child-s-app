@@ -66,5 +66,27 @@
     <string name="activity_title_register">Register Account</string>
     <string name="action_logout">Logout</string>
 
+    <!-- AddChildActivity Toast Updates -->
+    <string name="child_updated_toast">%1$s updated.</string>
+    <string name="child_update_error_toast">Error updating %1$s.</string>
+    <string name="child_device_id_exists_toast">Child with Device ID %1$s already exists.</string>
+    <string name="child_added_toast">%1$s added.</string>
+
+    <!-- ChildAdapter Dialog -->
+    <string name="confirm_delete_dialog_title">Confirm Delete</string>
+    <string name="confirm_delete_dialog_message">Are you sure you want to delete %1$s?</string>
+
+    <!-- Validation Errors -->
+    <string name="error_email_required">Email is required.</string>
+    <string name="error_password_required">Password is required.</string>
+    <string name="error_confirm_password_required">Confirm password is required.</string>
+    <string name="error_weak_password">Weak password. Please choose a stronger one.</string>
+    <string name="error_email_already_registered">This email is already registered. Please login or use a different email.</string>
+
+    <!-- MapViewActivity -->
+    <string name="error_no_device_id_for_map">Error: No Device ID specified for tracking.</string>
+    <string name="error_listening_location_updates">Error listening for location updates.</string>
+    <string name="location_data_incomplete">Location data incomplete.</string>
+    <string name="no_location_data_available">No location data available for %1$s.</string>
 
 </resources>
