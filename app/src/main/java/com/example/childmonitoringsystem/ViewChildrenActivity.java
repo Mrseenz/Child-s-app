@@ -22,34 +22,38 @@ public class ViewChildrenActivity extends AppCompatActivity {
 
         listViewChildren = findViewById(R.id.listViewChildren);
         textViewNoChildren = findViewById(R.id.textViewNoChildren);
-        childrenList = new ArrayList<>();
 
-        // TODO: Load children from SharedPreferences or a database
-        // For now, add some mock data
-        loadMockChildren();
+        // childrenList will be initialized in onResume/loadChildrenData
+        // adapter will also be initialized/updated there.
+    }
 
-        adapter = new ChildAdapter(this, childrenList);
-        listViewChildren.setAdapter(adapter);
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadChildrenData();
+    }
 
+    private void loadChildrenData() {
+        childrenList = ChildPersistenceManager.loadChildren(getApplicationContext());
+        if (childrenList == null) { // Should not happen with current PersistenceManager returning new ArrayList
+            childrenList = new ArrayList<>();
+        }
+
+        if (adapter == null) {
+            adapter = new ChildAdapter(this, childrenList);
+            listViewChildren.setAdapter(adapter);
+        } else {
+            // Clear adapter's old data and add all new data
+            // This is important if the list instance itself changes
+            adapter.clear();
+            adapter.addAll(childrenList);
+            adapter.notifyDataSetChanged();
+        }
         updateUI();
     }
 
-    private void loadMockChildren() {
-        // In a real app, this data would come from SharedPreferences, SQLite, or a server
-        // For demonstration, we add a few mock children if the list is empty.
-        // In a real scenario, you'd load them in onResume or similar lifecycle methods
-        // and ensure AddChildActivity actually saves them where they can be retrieved here.
-
-        // childrenList.add(new Child("Alice", "device123"));
-        // childrenList.add(new Child("Bob", "device456"));
-        // childrenList.add(new Child("Charlie", "device789"));
-
-        // For now, the list will be empty until actual persistence is implemented
-        // and AddChildActivity saves data to it.
-    }
-
     private void updateUI() {
-        if (childrenList.isEmpty()) {
+        if (childrenList == null || childrenList.isEmpty()) { // Added null check for robustness
             listViewChildren.setVisibility(View.GONE);
             textViewNoChildren.setVisibility(View.VISIBLE);
         } else {
@@ -57,20 +61,14 @@ public class ViewChildrenActivity extends AppCompatActivity {
             textViewNoChildren.setVisibility(View.GONE);
         }
         if(adapter != null) {
-            adapter.notifyDataSetChanged(); // Refresh the list
+            // adapter.notifyDataSetChanged(); // Already called in loadChildrenData if adapter exists
         }
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        // TODO: Refresh the list from the data source in case a child was added/edited
-        // For now, this won't do much as data isn't persisted across activities yet.
-        // If AddChildActivity actually saved data, we would reload it here.
-        updateUI();
-    }
+    // Note: onResume now calls loadChildrenData which handles adapter refresh.
+    // The old onResume logic is removed.
 
-    // TODO: Add methods to handle data persistence (saving/loading children)
+    // TODO: Add methods to handle data persistence (saving/loading children) - This is now handled by ChildPersistenceManager
     // For example, using SharedPreferences or a local SQLite database.
     // When a child is deleted in the adapter, the actual data source needs to be updated.
 }

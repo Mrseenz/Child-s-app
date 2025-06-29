@@ -11,16 +11,18 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import java.util.List;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 
 public class ChildAdapter extends ArrayAdapter<Child> {
 
     private Context mContext;
-    private List<Child> mChildrenList;
+    private List<Child> mChildrenList; // This list is managed by the adapter
 
     public ChildAdapter(@NonNull Context context, @NonNull List<Child> list) {
         super(context, 0, list);
         mContext = context;
-        mChildrenList = list;
+        mChildrenList = list; // Keep a reference to modify it directly
     }
 
     @NonNull
@@ -31,7 +33,13 @@ public class ChildAdapter extends ArrayAdapter<Child> {
             listItem = LayoutInflater.from(mContext).inflate(R.layout.list_item_child, parent, false);
         }
 
-        Child currentChild = mChildrenList.get(position);
+        // Use getItem(position) for safety, though mChildrenList should be in sync
+        final Child currentChild = getItem(position);
+
+        if (currentChild == null) {
+            // Should not happen if adapter is managed correctly, but good for safety
+            return listItem;
+        }
 
         TextView name = listItem.findViewById(R.id.textViewChildName);
         name.setText(currentChild.getName());
@@ -46,22 +54,39 @@ public class ChildAdapter extends ArrayAdapter<Child> {
         buttonEdit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // TODO: Implement edit functionality
-                // This might involve opening AddChildActivity with existing data
-                // or a new dedicated EditChildActivity
-                Toast.makeText(mContext, mContext.getString(R.string.edit_child_toast_format, currentChild.getName()), Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(mContext, AddChildActivity.class);
+                intent.putExtra(IntentKeys.CHILD_NAME_TO_EDIT, currentChild.getName());
+                intent.putExtra(IntentKeys.CHILD_DEVICE_ID_TO_EDIT, currentChild.getDeviceId());
+                mContext.startActivity(intent);
             }
         });
 
         buttonDelete.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // TODO: Implement delete confirmation and logic
-                // For now, just remove from list and notify adapter
-                mChildrenList.remove(position);
-                notifyDataSetChanged(); // This will refresh the ListView
-                Toast.makeText(mContext, mContext.getString(R.string.deleted_child_toast_format, currentChild.getName()), Toast.LENGTH_SHORT).show();
-                // Also update the underlying data source (SharedPreferences, DB, etc.)
+                new AlertDialog.Builder(mContext)
+                    .setTitle("Confirm Delete")
+                    .setMessage("Are you sure you want to delete " + currentChild.getName() + "?")
+                    .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            ChildPersistenceManager.deleteChild(mContext.getApplicationContext(), currentChild);
+                            // Remove from the adapter's list and notify
+                            mChildrenList.remove(currentChild); // Or use position if getItem(position) was used
+                            notifyDataSetChanged();
+                            Toast.makeText(mContext, mContext.getString(R.string.deleted_child_toast_format, currentChild.getName()), Toast.LENGTH_SHORT).show();
+
+                            // If ViewChildrenActivity needs to update its "No children" message,
+                            // it might need a callback or to re-check count after deletion.
+                            // For now, adapter handles its own list. ViewChildrenActivity will refresh onResume.
+                            // Alternatively, pass a Runnable or listener to the adapter to call updateUI on ViewChildrenActivity.
+                            if (mContext instanceof ViewChildrenActivity) {
+                                ((ViewChildrenActivity) mContext).updateUI();
+                            }
+                        }
+                    })
+                    .setNegativeButton(android.R.string.no, null)
+                    .setIcon(android.R.drawable.ic_dialog_alert)
+                    .show();
             }
         });
 

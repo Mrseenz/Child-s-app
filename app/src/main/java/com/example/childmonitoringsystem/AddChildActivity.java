@@ -13,6 +13,9 @@ public class AddChildActivity extends AppCompatActivity {
     private EditText editTextChildDeviceID;
     private Button buttonSaveChild;
 
+    private boolean isEditMode = false;
+    private String originalDeviceIdToEdit; // Used to identify the child if deviceId itself is changed
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -22,25 +25,61 @@ public class AddChildActivity extends AppCompatActivity {
         editTextChildDeviceID = findViewById(R.id.editTextChildDeviceID);
         buttonSaveChild = findViewById(R.id.buttonSaveChild);
 
+        // Check if launched in edit mode
+        if (getIntent().hasExtra(IntentKeys.CHILD_DEVICE_ID_TO_EDIT)) {
+            isEditMode = true;
+            originalDeviceIdToEdit = getIntent().getStringExtra(IntentKeys.CHILD_DEVICE_ID_TO_EDIT);
+            String nameToEdit = getIntent().getStringExtra(IntentKeys.CHILD_NAME_TO_EDIT);
+
+            editTextChildName.setText(nameToEdit);
+            editTextChildDeviceID.setText(originalDeviceIdToEdit);
+            // Optionally, make deviceId non-editable in edit mode if it's a primary key
+            // editTextChildDeviceID.setEnabled(false);
+            setTitle("Edit Child"); // Update activity title
+        } else {
+            setTitle("Add New Child");
+        }
+
+
         buttonSaveChild.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String childName = editTextChildName.getText().toString().trim();
-                String childDeviceID = editTextChildDeviceID.getText().toString().trim();
-
-                if (childName.isEmpty() || childDeviceID.isEmpty()) {
-                    Toast.makeText(AddChildActivity.this, getString(R.string.please_fill_all_fields_toast), Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                // TODO: Implement actual saving logic (e.g., SharedPreferences, SQLite, backend API)
-                // For now, just show a Toast message
-                String message = getString(R.string.child_saved_mock_toast_format, childName, childDeviceID);
-                Toast.makeText(AddChildActivity.this, message, Toast.LENGTH_LONG).show();
-
-                // Optionally, finish this activity and go back to the dashboard
-                // finish();
+                saveChildData();
             }
         });
+    }
+
+    private void saveChildData() {
+        String childName = editTextChildName.getText().toString().trim();
+        String childDeviceID = editTextChildDeviceID.getText().toString().trim();
+
+        if (childName.isEmpty() || childDeviceID.isEmpty()) {
+            Toast.makeText(AddChildActivity.this, getString(R.string.please_fill_all_fields_toast), Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Child currentChildDetails = new Child(childName, childDeviceID);
+
+        if (isEditMode) {
+            Child originalChild = new Child("", originalDeviceIdToEdit); // Create a shell Child object with the original ID for lookup
+            boolean updated = ChildPersistenceManager.updateChild(getApplicationContext(), originalChild, currentChildDetails);
+            if (updated) {
+                Toast.makeText(AddChildActivity.this, childName + " updated.", Toast.LENGTH_SHORT).show();
+                finish(); // Go back after successful update
+            } else {
+                Toast.makeText(AddChildActivity.this, "Error updating " + childName, Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            // Check if child with this device ID already exists before adding
+            List<Child> existingChildren = ChildPersistenceManager.loadChildren(getApplicationContext());
+            if (existingChildren.contains(currentChildDetails)) { // Relies on Child.equals()
+                Toast.makeText(AddChildActivity.this, "Child with Device ID " + childDeviceID + " already exists.", Toast.LENGTH_LONG).show();
+                return;
+            }
+
+            ChildPersistenceManager.addChild(getApplicationContext(), currentChildDetails);
+            Toast.makeText(AddChildActivity.this, childName + " added.", Toast.LENGTH_SHORT).show();
+            finish(); // Go back after successful add
+        }
     }
 }
