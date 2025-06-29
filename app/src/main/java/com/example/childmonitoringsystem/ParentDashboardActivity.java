@@ -10,7 +10,7 @@ public class ParentDashboardActivity extends AppCompatActivity {
 
     private Button buttonAddChild;
     private Button buttonViewChildren;
-    private Button buttonViewMap;
+    // private Button buttonViewMap; // Removed
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -19,7 +19,7 @@ public class ParentDashboardActivity extends AppCompatActivity {
 
         buttonAddChild = findViewById(R.id.buttonAddChild);
         buttonViewChildren = findViewById(R.id.buttonViewChildren);
-        buttonViewMap = findViewById(R.id.buttonViewMap);
+        // buttonViewMap = findViewById(R.id.buttonViewMap); // Removed
 
         buttonAddChild.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -37,12 +37,13 @@ public class ParentDashboardActivity extends AppCompatActivity {
             }
         });
 
-        buttonViewMap.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(ParentDashboardActivity.this, MapViewActivity.class);
-                startActivity(intent);
-            }
-        });
+        // Removed OnClickListener for buttonViewMap
+        // buttonViewMap.setOnClickListener(new View.OnClickListener() {
+        //     @Override
+        //     public void onClick(View v) {
+        //         Intent intent = new Intent(ParentDashboardActivity.this, MapViewActivity.class);
+        //         startActivity(intent);
+        //     }
+        // });
     }
 }

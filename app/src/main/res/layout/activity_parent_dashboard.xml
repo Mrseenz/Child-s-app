@@ -30,11 +30,14 @@
         android:text="@string/view_children_button_text"
         android:layout_marginBottom="16dp"/>
 
+    <!-- Removed generic map button, map is now accessed per child from ViewChildrenActivity -->
+    <!--
     <Button
         android:id="@+id/buttonViewMap"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/view_map_button_text"
         android:layout_marginBottom="16dp"/>
+    -->
 
 </LinearLayout>

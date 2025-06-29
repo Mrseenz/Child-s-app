@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.childmonitoringchildapp">
+
+    <!-- Internet Permission -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Location Permissions -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- Foreground Service Permission -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <!-- Background Location Permission (for Android 10+ if service needs to run continuously in background) -->
+    <!--
+        If you target Android 10 (API level 29) or higher and your app needs to access location
+        while in the background (e.g., your foreground service), you must also declare the
+        ACCESS_BACKGROUND_LOCATION permission.
+        Requesting this permission will require users to grant "Allow all the time" for location.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+
+        <activity android:name=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Declare the Location Reporting Service -->
+        <service
+            android:name=".LocationReportService"
+            android:foregroundServiceType="location" />
+            <!-- foregroundServiceType is required for services that use location -->
+
+    </application>
+
+</manifest>

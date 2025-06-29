@@ -43,5 +43,6 @@
     <string name="map_integration_info_text">Actual map integration (e.g., Google Maps SDK) will be implemented here.</string>
     <string name="activity_title_map_view">Child\'s Location</string>
     <string name="error_map_fragment_not_found">Error: Map Fragment not found.</string>
+    <string name="view_on_map_button_text">View on Map</string>
 
 </resources>

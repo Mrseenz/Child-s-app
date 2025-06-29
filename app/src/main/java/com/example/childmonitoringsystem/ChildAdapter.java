@@ -50,6 +50,7 @@ public class ChildAdapter extends ArrayAdapter<Child> {
         Button buttonEdit = listItem.findViewById(R.id.buttonEditChild);
         Button buttonDelete = listItem.findViewById(R.id.buttonDeleteChild);
         Button buttonSendNotification = listItem.findViewById(R.id.buttonSendNotification);
+        Button buttonViewChildMap = listItem.findViewById(R.id.buttonViewChildMap);
 
         buttonEdit.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -57,6 +58,15 @@ public class ChildAdapter extends ArrayAdapter<Child> {
                 Intent intent = new Intent(mContext, AddChildActivity.class);
                 intent.putExtra(IntentKeys.CHILD_NAME_TO_EDIT, currentChild.getName());
                 intent.putExtra(IntentKeys.CHILD_DEVICE_ID_TO_EDIT, currentChild.getDeviceId());
+                mContext.startActivity(intent);
+            }
+        });
+
+        buttonViewChildMap.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(mContext, MapViewActivity.class);
+                intent.putExtra(MapViewActivity.EXTRA_DEVICE_ID, currentChild.getDeviceId());
                 mContext.startActivity(intent);
             }
         });
@@ -105,4 +115,9 @@ public class ChildAdapter extends ArrayAdapter<Child> {
 
         return listItem;
     }
+
+    // Helper method to get context, as mContext is private
+    // private Context getAdapterContext() { // Not strictly needed as mContext is available
+    //     return mContext;
+    // }
 }

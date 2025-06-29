@@ -23,6 +23,13 @@
             android:label="@string/my_children_title"/>
         <activity android:name=".MapViewActivity"
             android:label="@string/activity_title_map_view"/>
+
+        <!-- Google Maps API Key -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="YOUR_API_KEY_HERE" />
+        <!-- IMPORTANT: Replace YOUR_API_KEY_HERE with your actual API key -->
+
     </application>
 
 </manifest>
