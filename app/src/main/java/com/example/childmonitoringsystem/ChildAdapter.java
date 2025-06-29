@@ -1,28 +1,44 @@
 package com.example.childmonitoringsystem;
 
+import android.app.AlertDialog;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.text.InputType;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.StyleSpan;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.functions.FirebaseFunctions;
+import com.google.firebase.functions.HttpsCallableResult;
 import java.util.List;
-import android.app.AlertDialog;
-import android.content.DialogInterface;
+import java.util.Map; // For HashMap if used explicitly, not for casting result.getData()
 
 public class ChildAdapter extends ArrayAdapter<Child> {
 
     private Context mContext;
-    private List<Child> mChildrenList; // This list is managed by the adapter
+    private List<Child> mChildrenList;
+    private UserChildrenManager userChildrenManager;
 
     public ChildAdapter(@NonNull Context context, @NonNull List<Child> list) {
         super(context, 0, list);
         mContext = context;
-        mChildrenList = list; // Keep a reference to modify it directly
+        mChildrenList = list;
+        userChildrenManager = new UserChildrenManager();
     }
 
     @NonNull
@@ -33,19 +49,16 @@ public class ChildAdapter extends ArrayAdapter<Child> {
             listItem = LayoutInflater.from(mContext).inflate(R.layout.list_item_child, parent, false);
         }
 
-        // Use getItem(position) for safety, though mChildrenList should be in sync
         final Child currentChild = getItem(position);
-
         if (currentChild == null) {
-            // Should not happen if adapter is managed correctly, but good for safety
             return listItem;
         }
 
         TextView name = listItem.findViewById(R.id.textViewChildName);
         name.setText(currentChild.getName());
 
-        TextView deviceId = listItem.findViewById(R.id.textViewChildDeviceId);
-        deviceId.setText("Device ID: " + currentChild.getDeviceId());
+        TextView deviceIdText = listItem.findViewById(R.id.textViewChildDeviceId);
+        deviceIdText.setText(mContext.getString(R.string.device_id_label_prefix) + currentChild.getDeviceId());
 
         Button buttonEdit = listItem.findViewById(R.id.buttonEditChild);
         Button buttonDelete = listItem.findViewById(R.id.buttonDeleteChild);
@@ -54,94 +67,91 @@ public class ChildAdapter extends ArrayAdapter<Child> {
         Button buttonPairDevice = listItem.findViewById(R.id.buttonPairDevice);
         Button buttonViewCallLogs = listItem.findViewById(R.id.buttonViewCallLogs);
         Button buttonViewSmsLogs = listItem.findViewById(R.id.buttonViewSmsLogs);
-        Button buttonViewContacts = listItem.findViewById(R.id.buttonViewContacts); // New button
+        Button buttonViewContacts = listItem.findViewById(R.id.buttonViewContacts);
 
-        buttonEdit.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(mContext, AddChildActivity.class);
-                intent.putExtra(IntentKeys.CHILD_NAME_TO_EDIT, currentChild.getName());
-                intent.putExtra(IntentKeys.CHILD_DEVICE_ID_TO_EDIT, currentChild.getDeviceId());
-                mContext.startActivity(intent);
-            }
+        buttonEdit.setOnClickListener(v -> {
+            Intent intent = new Intent(mContext, AddChildActivity.class);
+            intent.putExtra(IntentKeys.CHILD_NAME_TO_EDIT, currentChild.getName());
+            intent.putExtra(IntentKeys.CHILD_DEVICE_ID_TO_EDIT, currentChild.getDeviceId());
+            mContext.startActivity(intent);
         });
 
-        buttonPairDevice.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                callGeneratePairingCodeFunction(currentChild);
-            }
+        buttonPairDevice.setOnClickListener(v -> callGeneratePairingCodeFunction(currentChild));
+
+        buttonViewChildMap.setOnClickListener(v -> {
+            Intent intent = new Intent(mContext, MapViewActivity.class);
+            intent.putExtra(MapViewActivity.EXTRA_DEVICE_ID, currentChild.getDeviceId());
+            mContext.startActivity(intent);
         });
 
-        buttonViewChildMap.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(mContext, MapViewActivity.class);
-                intent.putExtra(MapViewActivity.EXTRA_DEVICE_ID, currentChild.getDeviceId());
-                mContext.startActivity(intent);
-            }
+        buttonSendNotification.setOnClickListener(v -> showSendNotificationDialog(currentChild));
+
+        buttonViewCallLogs.setOnClickListener(v -> {
+            Intent intent = new Intent(mContext, ViewCallLogsActivity.class);
+            intent.putExtra(ViewCallLogsActivity.EXTRA_DEVICE_ID, currentChild.getDeviceId());
+            intent.putExtra(ViewCallLogsActivity.EXTRA_CHILD_NAME, currentChild.getName());
+            mContext.startActivity(intent);
         });
 
-        buttonDelete.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                new AlertDialog.Builder(mContext)
-                    .setTitle(mContext.getString(R.string.confirm_delete_dialog_title))
-                    .setMessage(mContext.getString(R.string.confirm_delete_dialog_message, currentChild.getName()))
-                    .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                            ChildPersistenceManager.deleteChild(mContext.getApplicationContext(), currentChild);
-                            // Remove from the adapter's list and notify
-                            mChildrenList.remove(currentChild); // Or use position if getItem(position) was used
-                            notifyDataSetChanged();
-                            Toast.makeText(mContext, mContext.getString(R.string.deleted_child_toast_format, currentChild.getName()), Toast.LENGTH_SHORT).show();
+        buttonViewSmsLogs.setOnClickListener(v -> {
+            Intent intent = new Intent(mContext, ViewSmsLogsActivity.class);
+            intent.putExtra(ViewSmsLogsActivity.EXTRA_DEVICE_ID, currentChild.getDeviceId());
+            intent.putExtra(ViewSmsLogsActivity.EXTRA_CHILD_NAME, currentChild.getName());
+            mContext.startActivity(intent);
+        });
 
-                            // If ViewChildrenActivity needs to update its "No children" message,
-                            // it might need a callback or to re-check count after deletion.
-                            // For now, adapter handles its own list. ViewChildrenActivity will refresh onResume.
-                            // Alternatively, pass a Runnable or listener to the adapter to call updateUI on ViewChildrenActivity.
-                            if (mContext instanceof ViewChildrenActivity) {
-                                ((ViewChildrenActivity) mContext).updateUI();
-                            }
+        buttonViewContacts.setOnClickListener(v -> {
+            Intent intent = new Intent(mContext, ViewContactsActivity.class);
+            intent.putExtra(ViewContactsActivity.EXTRA_DEVICE_ID, currentChild.getDeviceId());
+            intent.putExtra(ViewContactsActivity.EXTRA_CHILD_NAME, currentChild.getName());
+            mContext.startActivity(intent);
+        });
+
+        buttonDelete.setOnClickListener(v -> {
+            new AlertDialog.Builder(mContext)
+                .setTitle(mContext.getString(R.string.confirm_delete_dialog_title))
+                .setMessage(mContext.getString(R.string.confirm_delete_dialog_message, currentChild.getName()))
+                .setPositiveButton(android.R.string.yes, (dialog, which) -> {
+                    // First, delete from local SharedPreferences
+                    ChildPersistenceManager.deleteChild(mContext.getApplicationContext(), currentChild);
+
+                    // Then, delete from Firestore
+                    userChildrenManager.deleteChildFromFirestore(currentChild.getDeviceId(), new UserChildrenManager.OperationStatusListener() {
+                        @Override
+                        public void onSuccess() {
+                            Log.d("ChildAdapter", "Child " + currentChild.getDeviceId() + " also deleted from Firestore.");
                         }
-                    })
-                    .setNegativeButton(android.R.string.no, null)
-                    .setIcon(android.R.drawable.ic_dialog_alert)
-                    .show();
-            }
+                        @Override
+                        public void onFailure(String errorMessage) {
+                            Log.e("ChildAdapter", "Failed to delete child " + currentChild.getDeviceId() + " from Firestore: " + errorMessage);
+                            Toast.makeText(mContext, "Cloud delete failed: " + errorMessage + ". Local data removed.", Toast.LENGTH_LONG).show();
+                            // Note: Local data is already removed. UX might need to handle this potential inconsistency.
+                        }
+                    });
+
+                    // Update UI
+                    mChildrenList.remove(currentChild); // Or remove by position
+                    notifyDataSetChanged();
+                    Toast.makeText(mContext, mContext.getString(R.string.deleted_child_toast_format, currentChild.getName()), Toast.LENGTH_SHORT).show();
+
+                    if (mContext instanceof ViewChildrenActivity) {
+                        ((ViewChildrenActivity) mContext).updateUI();
+                    }
+                })
+                .setNegativeButton(android.R.string.no, null)
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .show();
         });
-
-import com.google.firebase.functions.FirebaseFunctions;
-import com.google.firebase.functions.HttpsCallableResult;
-import com.google.android.gms.tasks.Task;
-import android.text.InputType;
-import android.widget.LinearLayout;
-// ... other imports ...
-
-// ... inside ChildAdapter class ...
-
-        buttonSendNotification.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showSendNotificationDialog(currentChild);
-            }
-        });
-
         return listItem;
     }
-
-    // Helper method to get context, as mContext is private
-    // private Context getAdapterContext() { // Not strictly needed as mContext is available
-    //     return mContext;
-    // }
 
     private void showSendNotificationDialog(final Child child) {
         AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
         builder.setTitle(mContext.getString(R.string.send_notification_dialog_title, child.getName()));
-
+        // ... (rest of dialog implementation as before)
         LinearLayout layout = new LinearLayout(mContext);
         layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(50, 50, 50, 50); // Add some padding
+        layout.setPadding(50, 50, 50, 50);
 
         final EditText titleInput = new EditText(mContext);
         titleInput.setHint(R.string.notification_title_hint);
@@ -155,59 +165,39 @@ import android.widget.LinearLayout;
         layout.addView(messageInput);
 
         builder.setView(layout);
-
-        builder.setPositiveButton(R.string.dialog_button_send, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                String title = titleInput.getText().toString().trim();
-                String message = messageInput.getText().toString().trim();
-
-                if (title.isEmpty()) {
-                    Toast.makeText(mContext, R.string.notification_title_required, Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                if (message.isEmpty()) {
-                    Toast.makeText(mContext, R.string.notification_message_required, Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                callSendNotificationFunction(child.getDeviceId(), title, message);
+        builder.setPositiveButton(R.string.dialog_button_send, (dialog, which) -> {
+            String title = titleInput.getText().toString().trim();
+            String message = messageInput.getText().toString().trim();
+            if (title.isEmpty()) {
+                Toast.makeText(mContext, R.string.notification_title_required, Toast.LENGTH_SHORT).show();
+                return;
             }
-        });
-        builder.setNegativeButton(R.string.dialog_button_cancel, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.cancel();
+            if (message.isEmpty()) {
+                Toast.makeText(mContext, R.string.notification_message_required, Toast.LENGTH_SHORT).show();
+                return;
             }
+            callSendNotificationFunction(child.getDeviceId(), title, message);
         });
+        builder.setNegativeButton(R.string.dialog_button_cancel, (dialog, which) -> dialog.cancel());
         builder.show();
     }
 
     private void callSendNotificationFunction(String targetDeviceId, String title, String message) {
         FirebaseFunctions functions = FirebaseFunctions.getInstance();
-
         java.util.Map<String, Object> data = new java.util.HashMap<>();
         data.put("targetDeviceId", targetDeviceId);
         data.put("messageTitle", title);
         data.put("messageBody", message);
-        // data.put("push", true); // Not needed if function is .onCall, but good for .onRequest
 
-        functions
-            .getHttpsCallable("sendNotification") // Name of your Cloud Function
-            .call(data)
-            .addOnCompleteListener(new com.google.android.gms.tasks.OnCompleteListener<HttpsCallableResult>() {
-                @Override
-                public void onComplete(@NonNull Task<HttpsCallableResult> task) {
-                    if (task.isSuccessful()) {
-                        // HttpsCallableResult result = task.getResult();
-                        // java.util.Map<String, Object> resultData = (java.util.Map<String, Object>) result.getData();
-                        // Log.d("ChildAdapter", "Cloud function result: " + resultData);
-                        Toast.makeText(mContext, R.string.notification_sent_successfully_toast, Toast.LENGTH_SHORT).show();
-                    } else {
-                        Exception e = task.getException();
-                        android.util.Log.e("ChildAdapter", "Error calling cloud function", e);
-                        String errorMessage = e != null ? e.getMessage() : "Unknown error";
-                        Toast.makeText(mContext, mContext.getString(R.string.notification_send_failed_toast, errorMessage), Toast.LENGTH_LONG).show();
-                    }
+        functions.getHttpsCallable("sendNotification").call(data)
+            .addOnCompleteListener((Task<HttpsCallableResult> task) -> {
+                if (task.isSuccessful()) {
+                    Toast.makeText(mContext, R.string.notification_sent_successfully_toast, Toast.LENGTH_SHORT).show();
+                } else {
+                    Exception e = task.getException();
+                    Log.e("ChildAdapter", "Error calling cloud function", e);
+                    String errorMessage = e != null ? e.getMessage() : "Unknown error";
+                    Toast.makeText(mContext, mContext.getString(R.string.notification_send_failed_toast, errorMessage), Toast.LENGTH_LONG).show();
                 }
             });
     }
@@ -215,7 +205,7 @@ import android.widget.LinearLayout;
     private void showPairingCodeDialog(String childName, String pairingCode, String expiresAtStr) {
         AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
         builder.setTitle(mContext.getString(R.string.pairing_code_dialog_title, childName));
-
+        // ... (rest of dialog implementation as before) ...
         LinearLayout layout = new LinearLayout(mContext);
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(50, 50, 50, 50);
@@ -227,24 +217,21 @@ import android.widget.LinearLayout;
         TextView codeText = new TextView(mContext);
         codeText.setText(pairingCode);
         codeText.setTextIsSelectable(true);
-        codeText.setTextSize(20f); // Make code larger
-        android.text.style.StyleSpan boldSpan = new android.text.style.StyleSpan(android.graphics.Typeface.BOLD);
-        android.text.SpannableString spannableCode = new android.text.SpannableString(pairingCode);
-        spannableCode.setSpan(boldSpan, 0, pairingCode.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        codeText.setTextSize(20f);
+        StyleSpan boldSpan = new StyleSpan(android.graphics.Typeface.BOLD);
+        SpannableString spannableCode = new SpannableString(pairingCode);
+        spannableCode.setSpan(boldSpan, 0, pairingCode.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         codeText.setText(spannableCode);
         layout.addView(codeText);
 
         TextView expiryText = new TextView(mContext);
-        // TODO: Parse expiresAtStr (ISO string) and format it nicely, or calculate "expires in X minutes"
-        // For now, just display the ISO string.
         expiryText.setText(mContext.getString(R.string.pairing_code_expires_at_label, expiresAtStr));
         layout.addView(expiryText);
 
         builder.setView(layout);
-
         builder.setPositiveButton(R.string.button_copy_code, (dialog, which) -> {
-            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) mContext.getSystemService(Context.CLIPBOARD_SERVICE);
-            android.content.ClipData clip = android.content.ClipData.newPlainText("PairingCode", pairingCode);
+            ClipboardManager clipboard = (ClipboardManager) mContext.getSystemService(Context.CLIPBOARD_SERVICE);
+            ClipData clip = ClipData.newPlainText("PairingCode", pairingCode);
             if (clipboard != null) {
                 clipboard.setPrimaryClip(clip);
                 Toast.makeText(mContext, R.string.pairing_code_copied_toast, Toast.LENGTH_SHORT).show();
@@ -260,16 +247,16 @@ import android.widget.LinearLayout;
         data.put("childDeviceId", child.getDeviceId());
         data.put("childName", child.getName());
 
-        functions
-            .getHttpsCallable("generatePairingCode")
-            .call(data)
+        functions.getHttpsCallable("generatePairingCode").call(data)
             .addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
                     HttpsCallableResult result = task.getResult();
                     if (result != null && result.getData() != null) {
-                        java.util.Map<String, String> resultData = (java.util.Map<String, String>) result.getData();
+                        // Assuming result.getData() is already a Map<String, String> or can be cast
+                        @SuppressWarnings("unchecked") // Suppress warning for this cast
+                        Map<String, String> resultData = (Map<String, String>) result.getData();
                         String pairingCode = resultData.get("pairingCode");
-                        String expiresAt = resultData.get("expiresAt"); // This will be an ISO string
+                        String expiresAt = resultData.get("expiresAt");
                         if (pairingCode != null && expiresAt != null) {
                             Toast.makeText(mContext, R.string.pairing_code_generated_toast, Toast.LENGTH_SHORT).show();
                             showPairingCodeDialog(child.getName(), pairingCode, expiresAt);
@@ -281,30 +268,10 @@ import android.widget.LinearLayout;
                     }
                 } else {
                     Exception e = task.getException();
-                    android.util.Log.e("ChildAdapter", "Error calling generatePairingCode function", e);
+                    Log.e("ChildAdapter", "Error calling generatePairingCode function", e);
                     String errorMessage = e != null ? e.getMessage() : "Unknown error";
                     Toast.makeText(mContext, mContext.getString(R.string.pairing_code_generation_failed_toast, errorMessage), Toast.LENGTH_LONG).show();
                 }
             });
-
-        buttonViewSmsLogs.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(mContext, ViewSmsLogsActivity.class);
-                intent.putExtra(ViewSmsLogsActivity.EXTRA_DEVICE_ID, currentChild.getDeviceId());
-                intent.putExtra(ViewSmsLogsActivity.EXTRA_CHILD_NAME, currentChild.getName());
-                mContext.startActivity(intent);
-            }
-        });
-
-        buttonViewContacts.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(mContext, ViewContactsActivity.class);
-                intent.putExtra(ViewContactsActivity.EXTRA_DEVICE_ID, currentChild.getDeviceId());
-                intent.putExtra(ViewContactsActivity.EXTRA_CHILD_NAME, currentChild.getName());
-                mContext.startActivity(intent);
-            }
-        });
     }
 }

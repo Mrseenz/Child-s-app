@@ -13,7 +13,11 @@ public class ViewChildrenActivity extends AppCompatActivity {
     private ListView listViewChildren;
     private TextView textViewNoChildren;
     private ChildAdapter adapter;
-    private List<Child> childrenList; // This should be populated from persistent storage
+    private List<Child> childrenList;
+    private UserChildrenManager userChildrenManager;
+    // ProgressBar and loading state management might be needed here too
+    private android.widget.ProgressBar progressBarViewChildren;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -22,52 +26,68 @@ public class ViewChildrenActivity extends AppCompatActivity {
 
         listViewChildren = findViewById(R.id.listViewChildren);
         textViewNoChildren = findViewById(R.id.textViewNoChildren);
+        progressBarViewChildren = findViewById(R.id.progressBarViewChildren); // Assuming you add this ID to XML
 
-        // childrenList will be initialized in onResume/loadChildrenData
-        // adapter will also be initialized/updated there.
+        userChildrenManager = new UserChildrenManager();
+        childrenList = new ArrayList<>(); // Initialize empty list
+        adapter = new ChildAdapter(this, childrenList);
+        listViewChildren.setAdapter(adapter);
+
+        // Initial UI state
+        progressBarViewChildren.setVisibility(View.VISIBLE);
+        listViewChildren.setVisibility(View.GONE);
+        textViewNoChildren.setVisibility(View.GONE);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        loadChildrenData();
+        loadChildrenFromFirestore();
     }
 
-    private void loadChildrenData() {
-        childrenList = ChildPersistenceManager.loadChildren(getApplicationContext());
-        if (childrenList == null) { // Should not happen with current PersistenceManager returning new ArrayList
-            childrenList = new ArrayList<>();
-        }
+    private void loadChildrenFromFirestore() {
+        progressBarViewChildren.setVisibility(View.VISIBLE);
+        listViewChildren.setVisibility(View.GONE);
+        textViewNoChildren.setVisibility(View.GONE);
 
-        if (adapter == null) {
-            adapter = new ChildAdapter(this, childrenList);
-            listViewChildren.setAdapter(adapter);
-        } else {
-            // Clear adapter's old data and add all new data
-            // This is important if the list instance itself changes
-            adapter.clear();
-            adapter.addAll(childrenList);
-            adapter.notifyDataSetChanged();
-        }
-        updateUI();
+        userChildrenManager.loadChildrenFromFirestore(new UserChildrenManager.UserChildrenListener() {
+            @Override
+            public void onChildrenLoaded(List<Child> loadedChildren) {
+                progressBarViewChildren.setVisibility(View.GONE);
+                childrenList.clear();
+                if (loadedChildren != null) {
+                    childrenList.addAll(loadedChildren);
+                }
+                adapter.notifyDataSetChanged(); // Or adapter.updateChildren(childrenList) if you add such method
+                updateUI();
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                progressBarViewChildren.setVisibility(View.GONE);
+                Log.e("ViewChildrenActivity", "Error loading children: " + errorMessage);
+                Toast.makeText(ViewChildrenActivity.this, getString(R.string.children_load_failure_message) + "\n" + errorMessage, Toast.LENGTH_LONG).show();
+                textViewNoChildren.setText(getString(R.string.children_load_failure_message));
+                updateUI(); // Will show "no children" text due to empty list (and the error text set above)
+            }
+        });
     }
 
-    private void updateUI() {
-        if (childrenList == null || childrenList.isEmpty()) { // Added null check for robustness
+    // updateUI is still relevant
+    public void updateUI() { // Made public so adapter can call it after delete
+        if (childrenList == null || childrenList.isEmpty()) {
             listViewChildren.setVisibility(View.GONE);
+            // Ensure "no children" text is appropriate if it was an error message before
+            if (progressBarViewChildren.getVisibility() == View.GONE) { // Only set if not loading
+                 textViewNoChildren.setText(R.string.no_children_added_text); // Reset to default "no children"
+            }
             textViewNoChildren.setVisibility(View.VISIBLE);
         } else {
             listViewChildren.setVisibility(View.VISIBLE);
             textViewNoChildren.setVisibility(View.GONE);
         }
-        if(adapter != null) {
-            // adapter.notifyDataSetChanged(); // Already called in loadChildrenData if adapter exists
-        }
     }
 
-    // Note: onResume now calls loadChildrenData which handles adapter refresh.
-    // The old onResume logic is removed.
-
-    // Data persistence (saving/loading children) is handled by ChildPersistenceManager.
-    // When a child is deleted in the adapter, ChildPersistenceManager updates the data source.
+    // Note: onResume now calls loadChildrenFromFirestore.
+    // Local SharedPreferences (ChildPersistenceManager) is no longer the primary source for this view.
 }

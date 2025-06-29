@@ -143,5 +143,8 @@
     <string name="last_synced_label">Last Synced: </string>
     <string name="no_phone_numbers_available">No phone numbers available.</string> <!-- From ContactEntry POJO -->
     <string name="view_contacts_button_text">View Contacts</string>
+    <string name="edit_child_activity_title">Edit Child</string>
+    <string name="device_id_label_prefix">Device ID: </string>
+    <string name="children_load_failure_message">Failed to load children. Swipe down to retry or check connection.</string>
 
 </resources>
