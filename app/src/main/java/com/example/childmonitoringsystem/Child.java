@@ -32,4 +32,20 @@ public class Child {
     public String toString() {
         return "Name: " + name + "\\nDevice ID: " + deviceId;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Child child = (Child) o;
+        // Assuming deviceId is unique and the primary identifier for equality.
+        // If name can also uniquely identify or is part of a composite key, adjust accordingly.
+        return deviceId != null ? deviceId.equals(child.deviceId) : child.deviceId == null;
+    }
+
+    @Override
+    public int hashCode() {
+        // Using deviceId for hashCode as it's assumed to be the unique identifier.
+        return deviceId != null ? deviceId.hashCode() : 0;
+    }
 }
