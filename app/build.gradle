@@ -55,6 +55,9 @@ dependencies {
     // Firebase Authentication
     implementation 'com.google.firebase:firebase-auth'
 
+    // Firebase Functions (for calling Cloud Functions)
+    implementation 'com.google.firebase:firebase-functions-ktx:20.0.2' // Or latest, ktx includes Java version
+
     // Google Maps SDK
     implementation 'com.google.android.gms:play-services-maps:18.0.0' // Use recent version
 }

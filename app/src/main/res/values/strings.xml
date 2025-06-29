@@ -89,4 +89,27 @@
     <string name="location_data_incomplete">Location data incomplete.</string>
     <string name="no_location_data_available">No location data available for %1$s.</string>
 
+    <!-- Send Notification Dialog (Parent App) -->
+    <string name="send_notification_dialog_title">Send Notification to %1$s</string>
+    <string name="notification_title_hint">Notification Title</string>
+    <string name="notification_message_hint">Notification Message</string>
+    <string name="dialog_button_send">Send</string>
+    <string name="dialog_button_cancel">Cancel</string>
+    <string name="notification_title_required">Title is required.</string>
+    <string name="notification_message_required">Message is required.</string>
+    <string name="notification_sent_successfully_toast">Notification sent successfully.</string>
+    <string name="notification_send_failed_toast">Failed to send notification: %1$s</string>
+
+    <!-- Child Pairing (Parent App) -->
+    <string name="pair_device_button_text">Pair New Device</string>
+    <string name="pairing_code_dialog_title">Pairing Code for %1$s</string>
+    <string name="pairing_code_label">Code:</string>
+    <string name="pairing_code_expires_at_label">Expires at: %1$s</string>
+    <string name="pairing_code_expires_in_label">Expires in %1$d minutes.</string>
+    <string name="button_copy_code">Copy Code</string>
+    <string name="button_close_dialog">Close</string>
+    <string name="pairing_code_copied_toast">Pairing code copied to clipboard.</string>
+    <string name="pairing_code_generation_failed_toast">Failed to generate pairing code: %1$s</string>
+    <string name="pairing_code_generated_toast">Pairing code generated.</string>
+
 </resources>
