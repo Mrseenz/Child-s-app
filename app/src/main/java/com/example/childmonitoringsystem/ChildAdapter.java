@@ -52,6 +52,7 @@ public class ChildAdapter extends ArrayAdapter<Child> {
         Button buttonSendNotification = listItem.findViewById(R.id.buttonSendNotification);
         Button buttonViewChildMap = listItem.findViewById(R.id.buttonViewChildMap);
         Button buttonPairDevice = listItem.findViewById(R.id.buttonPairDevice);
+        Button buttonViewCallLogs = listItem.findViewById(R.id.buttonViewCallLogs); // New button
 
         buttonEdit.setOnClickListener(new View.OnClickListener() {
             @Override

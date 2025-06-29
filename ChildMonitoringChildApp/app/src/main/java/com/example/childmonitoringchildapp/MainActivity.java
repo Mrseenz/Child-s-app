@@ -2,6 +2,7 @@ package com.example.childmonitoringchildapp;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SwitchCompat; // Added for SwitchCompat
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -19,18 +20,19 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CompoundButton; // Added for Switch
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.firebase.messaging.FirebaseMessaging; // For FCM token refresh
+import com.google.firebase.messaging.FirebaseMessaging;
 
-import org.json.JSONObject; // For HTTP Call
-import java.io.BufferedReader; // For HTTP Call
-import java.io.InputStreamReader; // For HTTP Call
-import java.io.OutputStream; // For HTTP Call
-import java.net.HttpURLConnection; // For HTTP Call
-import java.net.URL; // For HTTP Call
+import org.json.JSONObject;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.UUID;
 
 
@@ -40,25 +42,33 @@ public class MainActivity extends AppCompatActivity {
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 101;
     private static final int BACKGROUND_LOCATION_PERMISSION_REQUEST_CODE = 102;
     private static final int NOTIFICATION_PERMISSION_REQUEST_CODE = 103;
+    private static final int CALL_LOG_PERMISSION_REQUEST_CODE = 104;
+    private static final int SMS_PERMISSION_REQUEST_CODE = 105;
+    private static final int CONTACTS_PERMISSION_REQUEST_CODE = 106; // New request code
 
     private static final String PREFS_NAME = "ChildAppPrefs";
-    private static final String KEY_DEVICE_ID = "pairedChildDeviceId"; // Stored childDeviceId after pairing
+    private static final String KEY_DEVICE_ID = "pairedChildDeviceId";
     private static final String KEY_IS_PAIRED = "isPaired";
     private static final String KEY_PAIRED_CHILD_NAME = "pairedChildName";
-    private static final String KEY_UNIQUE_ID = "childDeviceUniqueId"; // Persisted UUID as fallback
+    private static final String KEY_UNIQUE_ID = "childDeviceUniqueId";
+    // Using LocationReportService.KEY_CALL_LOG_MONITORING_ENABLED to ensure consistency
+    // private static final String KEY_CALL_LOG_MONITORING_ENABLED_PREF = LocationReportService.KEY_CALL_LOG_MONITORING_ENABLED;
 
-    // TODO: Replace with your actual deployed Cloud Function URL
-    private static final String VERIFY_PAIRING_CODE_FUNCTION_URL = "YOUR_CLOUD_FUNCTION_URL_HERE/verifyPairingCode";
+
+    private static final String VERIFY_PAIRING_CODE_FUNCTION_URL = "YOUR_CLOUD_FUNCTION_URL_HERE/verifyPairingCode"; // TODO: User must set this
 
     private EditText editTextPairingCode;
     private Button buttonAction;
     private TextView textViewServiceStatus;
-    private TextView textViewLastLocation; // Still useful for debugging location service
+    private TextView textViewLastLocation;
+    private SwitchCompat switchCallLogMonitoring;
+    private SwitchCompat switchSmsLogMonitoring;
+    private SwitchCompat switchContactsSync; // New Contacts Switch
 
     private boolean isPaired = false;
     private String pairedChildDeviceId = null;
     private String pairedChildName = null;
-    private boolean isLocationServiceRunning = false; // Tracks location service state
+    private boolean isLocationServiceRunning = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,11 +78,18 @@ public class MainActivity extends AppCompatActivity {
         editTextPairingCode = findViewById(R.id.editTextPairingCode);
         buttonAction = findViewById(R.id.buttonAction);
         textViewServiceStatus = findViewById(R.id.textViewServiceStatus);
-        textViewLastLocation = findViewById(R.id.textViewLastLocation); // Keep for location debug
+        textViewLastLocation = findViewById(R.id.textViewLastLocation);
+        switchCallLogMonitoring = findViewById(R.id.switchCallLogMonitoring);
+        switchSmsLogMonitoring = findViewById(R.id.switchSmsLogMonitoring);
+        switchContactsSync = findViewById(R.id.switchContactsSync); // Initialize new switch
 
         loadPairingState();
-        updateUIAfterPairingStateChange(); // Sets initial UI based on isPaired
+        loadCallLogSwitchState();
+        loadSmsLogSwitchState();
+        loadContactsSyncSwitchState(); // Load Contacts switch state
+        updateUIAfterPairingStateChange();
         requestNotificationPermissionIfNeeded();
+        // Permissions for call/SMS/contacts logs are requested when their respective switches are toggled ON.
 
         buttonAction.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -88,8 +105,96 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-        // TODO: Implement more robust check for actual service running state on startup/resume.
+
+        switchCallLogMonitoring.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    // Request permission only if enabling and not already granted
+                    if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_CALL_LOG) != PackageManager.PERMISSION_GRANTED) {
+                        requestCallLogPermission();
+                    } else {
+                        saveCallLogMonitoringState(true);
+                        Toast.makeText(MainActivity.this, getString(R.string.call_log_monitoring_enabled_toast), Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    saveCallLogMonitoringState(false);
+                    Toast.makeText(MainActivity.this, getString(R.string.call_log_monitoring_disabled_toast), Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+        switchSmsLogMonitoring.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
+                        requestSmsPermission();
+                    } else {
+                        saveSmsMonitoringState(true);
+                        Toast.makeText(MainActivity.this, getString(R.string.sms_log_monitoring_enabled_toast), Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    saveSmsMonitoringState(false);
+                    Toast.makeText(MainActivity.this, getString(R.string.sms_log_monitoring_disabled_toast), Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+        switchContactsSync.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
+                        requestContactsPermission();
+                    } else {
+                        saveContactsSyncState(true);
+                        Toast.makeText(MainActivity.this, getString(R.string.contacts_sync_enabled_toast), Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    saveContactsSyncState(false);
+                    Toast.makeText(MainActivity.this, getString(R.string.contacts_sync_disabled_toast), Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
     }
+
+    private void loadCallLogSwitchState() {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        boolean enabled = prefs.getBoolean(LocationReportService.KEY_CALL_LOG_MONITORING_ENABLED, false);
+        switchCallLogMonitoring.setChecked(enabled);
+        switchCallLogMonitoring.setVisibility(isPaired ? View.VISIBLE : View.GONE);
+    }
+
+    private void saveCallLogMonitoringState(boolean isEnabled) {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        prefs.edit().putBoolean(LocationReportService.KEY_CALL_LOG_MONITORING_ENABLED, isEnabled).apply();
+    }
+
+    private void loadSmsLogSwitchState() {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        boolean enabled = prefs.getBoolean(LocationReportService.KEY_SMS_LOG_MONITORING_ENABLED, false);
+        switchSmsLogMonitoring.setChecked(enabled);
+        switchSmsLogMonitoring.setVisibility(isPaired ? View.VISIBLE : View.GONE);
+    }
+
+    private void saveSmsMonitoringState(boolean isEnabled) {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        prefs.edit().putBoolean(LocationReportService.KEY_SMS_LOG_MONITORING_ENABLED, isEnabled).apply();
+    }
+
+    private void loadContactsSyncSwitchState() {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        boolean enabled = prefs.getBoolean(LocationReportService.KEY_CONTACTS_SYNC_ENABLED, false);
+        switchContactsSync.setChecked(enabled);
+        switchContactsSync.setVisibility(isPaired ? View.VISIBLE : View.GONE);
+    }
+
+    private void saveContactsSyncState(boolean isEnabled) {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        prefs.edit().putBoolean(LocationReportService.KEY_CONTACTS_SYNC_ENABLED, isEnabled).apply();
+    }
+
 
     private void loadPairingState() {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
@@ -106,7 +211,7 @@ public class MainActivity extends AppCompatActivity {
         if (paired && deviceId != null) {
             editor.putString(KEY_DEVICE_ID, deviceId);
             editor.putString(KEY_PAIRED_CHILD_NAME, childName);
-            this.pairedChildDeviceId = deviceId; // Update instance variable
+            this.pairedChildDeviceId = deviceId;
             this.pairedChildName = childName;
         } else {
             editor.remove(KEY_DEVICE_ID);
@@ -114,7 +219,7 @@ public class MainActivity extends AppCompatActivity {
             this.pairedChildDeviceId = null;
             this.pairedChildName = null;
         }
-        this.isPaired = paired; // Update instance variable
+        this.isPaired = paired;
         editor.apply();
     }
 
@@ -155,6 +260,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private class VerifyCodeTask extends AsyncTask<String, Void, String> {
+        // ... (doInBackground remains the same) ...
         @Override
         protected String doInBackground(String... params) {
             String pairingCode = params[0];
@@ -166,6 +272,9 @@ public class MainActivity extends AppCompatActivity {
                 urlConnection.setRequestMethod("POST");
                 urlConnection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
                 urlConnection.setDoOutput(true);
+                urlConnection.setConnectTimeout(15000); // 15 seconds
+                urlConnection.setReadTimeout(15000); // 15 seconds
+
 
                 JSONObject jsonParam = new JSONObject();
                 jsonParam.put("pairingCode", pairingCode);
@@ -202,6 +311,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+
         @Override
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
@@ -212,16 +322,16 @@ public class MainActivity extends AppCompatActivity {
                     String receivedDeviceId = jsonResponse.getString("childDeviceId");
                     String receivedChildName = jsonResponse.optString("childName", "Paired Child");
                     savePairingState(true, receivedDeviceId, receivedChildName);
-                    textViewServiceStatus.setText(getString(R.string.status_pairing_successful, receivedChildName, receivedDeviceId));
+                    // textViewServiceStatus will be updated by updateUIAfterPairingStateChange
                     triggerFCMTokenRefreshAndUpload();
                 } else {
                     String errorMsg = jsonResponse.optString("error", "Unknown pairing error.");
-                    savePairingState(false, null, null);
+                    savePairingState(false, null, null); // Ensure isPaired is false
                     textViewServiceStatus.setText(getString(R.string.status_pairing_failed, errorMsg));
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Error parsing pairing response JSON", e);
-                savePairingState(false, null, null);
+                savePairingState(false, null, null); // Ensure isPaired is false
                 textViewServiceStatus.setText(getString(R.string.status_pairing_failed, "Invalid response from server."));
             }
             updateUIAfterPairingStateChange();
@@ -237,15 +347,6 @@ public class MainActivity extends AppCompatActivity {
                 }
                 String token = task.getResult();
                 Log.d(TAG, "FCM Token fetched for upload: " + token);
-                // Manually call the method in MyFirebaseMessagingService or a utility class
-                // This assumes MyFirebaseMessagingService has a static method or you have another way
-                // For simplicity, let's assume a utility method or direct call if context is available
-                // MyFirebaseMessagingService.sendTokenToServer(getApplicationContext(), token); // Example
-                // For now, just log. Actual upload is in MyFirebaseMessagingService.onNewToken
-                // which should also read the LATEST deviceId from prefs.
-                // The service itself will handle onNewToken. If token is same, it won't re-upload usually.
-                // If deviceId was missing before pairing, this ensures it's available now.
-                // A more direct way to ensure upload:
                 SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
                 String currentDeviceId = prefs.getString(KEY_DEVICE_ID, null);
                 if (currentDeviceId != null && token != null) {
@@ -256,22 +357,22 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void updateUIAfterPairingStateChange() {
+        loadCallLogSwitchState();
+        loadSmsLogSwitchState();
+        loadContactsSyncSwitchState(); // Also update Contacts switch visibility
         if (isPaired) {
             editTextPairingCode.setVisibility(View.GONE);
-            // textViewServiceStatus is updated by pairing success/failure or service state
-            // buttonAction text and enabled state will be managed by updateUIBasedOnLocationServiceState
-            if (pairedChildDeviceId != null) {
-                 // Show the child's name/ID if available
-                textViewServiceStatus.setText(getString(R.string.status_pairing_successful, pairedChildName, pairedChildDeviceId) + "\n" + (isLocationServiceRunning ? getString(R.string.service_status_running) : getString(R.string.service_status_stopped)));
-            }
-            updateUIBasedOnLocationServiceState(); // Manages buttonAction and specific service status text
+            updateUIBasedOnLocationServiceState();
         } else {
             editTextPairingCode.setVisibility(View.VISIBLE);
             editTextPairingCode.setEnabled(true);
             buttonAction.setText(getString(R.string.pair_device_button));
             buttonAction.setEnabled(true);
             textViewServiceStatus.setText(getString(R.string.status_waiting_for_pairing));
-            isLocationServiceRunning = false; // Reset service status if unpairing or initial state
+            isLocationServiceRunning = false;
+            switchCallLogMonitoring.setVisibility(View.GONE);
+            switchSmsLogMonitoring.setVisibility(View.GONE);
+            switchContactsSync.setVisibility(View.GONE); // Hide Contacts switch if not paired
         }
     }
 
@@ -281,7 +382,6 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "Device not paired. Please pair first.", Toast.LENGTH_SHORT).show();
             return;
         }
-        // Device ID for service is now pairedChildDeviceId, no need to read from EditText
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
@@ -320,14 +420,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startLocationService() {
-        if (pairedChildDeviceId == null) { // Safeguard
+        if (pairedChildDeviceId == null) {
             Log.e(TAG, "Attempted to start service, but pairedChildDeviceId is null.");
-            isPaired = false; // Something went wrong with pairing state
+            isPaired = false;
             updateUIAfterPairingStateChange();
             return;
         }
         Intent serviceIntent = new Intent(this, LocationReportService.class);
-        serviceIntent.putExtra("deviceId", pairedChildDeviceId); // Use the paired device ID
+        serviceIntent.putExtra("deviceId", pairedChildDeviceId);
         ContextCompat.startForegroundService(this, serviceIntent);
         isLocationServiceRunning = true;
         updateUIBasedOnLocationServiceState();
@@ -340,27 +440,28 @@ public class MainActivity extends AppCompatActivity {
         updateUIBasedOnLocationServiceState();
     }
 
-    // Renamed from updateUIBasedOnServiceState to be more specific
     private void updateUIBasedOnLocationServiceState() {
-        if (!isPaired) { // If not paired, UI is handled by updateUIAfterPairingStateChange
+        if (!isPaired) {
             buttonAction.setText(getString(R.string.pair_device_button));
             buttonAction.setEnabled(true);
             editTextPairingCode.setVisibility(View.VISIBLE);
             editTextPairingCode.setEnabled(true);
             textViewServiceStatus.setText(getString(R.string.status_waiting_for_pairing));
+            switchCallLogMonitoring.setVisibility(View.GONE); // Hide if not paired
             return;
         }
 
-        // Paired, so manage service start/stop UI
-        editTextPairingCode.setVisibility(View.GONE); // Hide pairing code input
-        buttonAction.setEnabled(true); // Always enabled if paired
+        editTextPairingCode.setVisibility(View.GONE);
+        buttonAction.setEnabled(true);
+        switchCallLogMonitoring.setVisibility(View.VISIBLE); // Show if paired
 
+        String baseStatus = getString(R.string.status_pairing_successful, pairedChildName, pairedChildDeviceId);
         if (isLocationServiceRunning) {
             buttonAction.setText(getString(R.string.stop_location_reporting));
-            textViewServiceStatus.setText(getString(R.string.status_pairing_successful, pairedChildName, pairedChildDeviceId) + "\n" + getString(R.string.service_status_running));
+            textViewServiceStatus.setText(baseStatus + "\n" + getString(R.string.service_status_running));
         } else {
             buttonAction.setText(getString(R.string.start_location_reporting));
-             textViewServiceStatus.setText(getString(R.string.status_pairing_successful, pairedChildName, pairedChildDeviceId) + "\n" + getString(R.string.service_status_stopped));
+             textViewServiceStatus.setText(baseStatus + "\n" + getString(R.string.service_status_stopped));
         }
     }
 
@@ -392,6 +493,39 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(this, "Notification permission denied. You may not receive important updates.", Toast.LENGTH_LONG).show();
                 }
                 break;
+            case CALL_LOG_PERMISSION_REQUEST_CODE:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(this, "Call Log permission granted.", Toast.LENGTH_SHORT).show();
+                    saveCallLogMonitoringState(true); // Save state as enabled since permission granted
+                    switchCallLogMonitoring.setChecked(true); // Reflect in UI
+                } else {
+                    Toast.makeText(this, getString(R.string.call_log_permission_denied_toast), Toast.LENGTH_LONG).show();
+                    saveCallLogMonitoringState(false); // Save state as disabled
+                    switchCallLogMonitoring.setChecked(false); // Reflect in UI
+                }
+                break;
+            case SMS_PERMISSION_REQUEST_CODE:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(this, getString(R.string.sms_permission_granted_toast), Toast.LENGTH_SHORT).show();
+                    saveSmsMonitoringState(true); // Save state as enabled
+                    switchSmsLogMonitoring.setChecked(true); // Reflect in UI
+                } else {
+                    Toast.makeText(this, getString(R.string.sms_permission_denied_toast), Toast.LENGTH_LONG).show();
+                    saveSmsMonitoringState(false); // Save state as disabled
+                    switchSmsLogMonitoring.setChecked(false); // Reflect in UI
+                }
+                break;
+            case CONTACTS_PERMISSION_REQUEST_CODE:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(this, getString(R.string.contacts_permission_granted_toast), Toast.LENGTH_SHORT).show();
+                    saveContactsSyncState(true); // Save state as enabled
+                    switchContactsSync.setChecked(true); // Reflect in UI
+                } else {
+                    Toast.makeText(this, getString(R.string.contacts_permission_denied_toast), Toast.LENGTH_LONG).show();
+                    saveContactsSyncState(false); // Save state as disabled
+                    switchContactsSync.setChecked(false); // Reflect in UI
+                }
+                break;
         }
     }
 
@@ -404,5 +538,39 @@ public class MainActivity extends AppCompatActivity {
                         NOTIFICATION_PERMISSION_REQUEST_CODE);
             }
         }
+    }
+
+    // Renamed from requestCallLogPermissionIfNeeded to be more explicit for the switch
+    private void requestCallLogPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CALL_LOG) !=
+                PackageManager.PERMISSION_GRANTED) {
+            // TODO: Show rationale dialog if not shown before or if user denied previously.
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.READ_CALL_LOG},
+                    CALL_LOG_PERMISSION_REQUEST_CODE);
+        }
+        // If already granted, the switch listener will handle saving state.
+    }
+
+    private void requestSmsPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) !=
+                PackageManager.PERMISSION_GRANTED) {
+            // TODO: Show rationale dialog if not shown before or if user denied previously.
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.READ_SMS},
+                    SMS_PERMISSION_REQUEST_CODE);
+        }
+        // If already granted, the switch listener (when implemented for SMS) will handle saving state.
+    }
+
+    private void requestContactsPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) !=
+                PackageManager.PERMISSION_GRANTED) {
+            // TODO: Show rationale dialog if not shown before or if user denied previously.
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.READ_CONTACTS},
+                    CONTACTS_PERMISSION_REQUEST_CODE);
+        }
+        // If already granted, the switch listener (when implemented for Contacts) will handle saving state.
     }
 }
