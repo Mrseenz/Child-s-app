@@ -1,0 +1,47 @@
+<resources>
+    <string name="app_name">Child Monitoring System</string>
+
+    <!-- LoginActivity -->
+    <string name="email_hint">Email</string>
+    <string name="password_hint">Password</string>
+    <string name="login_button_text">Login</string>
+    <string name="login_successful_toast">Login Successful</string>
+    <string name="invalid_credentials_toast">Invalid Credentials</string>
+
+    <!-- ParentDashboardActivity -->
+    <string name="parent_dashboard_title">Parent Dashboard</string>
+    <string name="add_child_button_text">Add New Child</string>
+    <string name="view_children_button_text">View My Children</string>
+    <string name="view_map_button_text">View Child\'s Location (Map)</string>
+    <string name="add_child_clicked_toast">Add Child Clicked</string> <!-- Kept for dashboard buttons if direct navigation is ever commented out for testing -->
+    <string name="view_children_clicked_toast">View Children Clicked</string> <!-- Kept for dashboard buttons -->
+    <string name="view_map_clicked_toast">View Map Clicked</string> <!-- Kept for dashboard buttons -->
+
+
+    <!-- AddChildActivity -->
+    <string name="add_new_child_title">Add New Child</string>
+    <string name="child_name_hint">Child\'s Name</string>
+    <string name="child_device_id_hint">Child\'s Device ID (for tracking)</string>
+    <string name="save_child_button_text">Save Child</string>
+    <string name="please_fill_all_fields_toast">Please fill all fields</string>
+    <string name="child_saved_mock_toast_format">Child: %1$s, Device ID: %2$s saved (mock).</string>
+
+    <!-- ViewChildrenActivity & list_item_child -->
+    <string name="my_children_title">My Children</string>
+    <string name="no_children_added_text">No children added yet.</string>
+    <string name="child_name_label_format">Child Name: %1$s</string> <!-- Not directly used in list_item_child textview, but good for adapters -->
+    <string name="child_device_id_label_format">Device ID: %1$s</string>
+    <string name="edit_button_text">Edit</string>
+    <string name="delete_button_text">Delete</string>
+    <string name="send_notification_button_text">Send Notification</string>
+    <string name="edit_child_toast_format">Edit: %1$s</string>
+    <string name="deleted_child_toast_format">Deleted: %1$s</string>
+    <string name="sending_mock_notification_toast_format">Sending mock notification to %1$s</string>
+
+    <!-- MapViewActivity -->
+    <string name="map_view_placeholder_title">Map View Placeholder</string>
+    <string name="map_integration_info_text">Actual map integration (e.g., Google Maps SDK) will be implemented here.</string>
+    <string name="activity_title_map_view">Child\'s Location</string>
+    <string name="error_map_fragment_not_found">Error: Map Fragment not found.</string>
+
+</resources>
