@@ -30,27 +30,36 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     public void onNewToken(@NonNull String token) {
         super.onNewToken(token);
         Log.d(TAG, "Refreshed token: " + token);
-        sendRegistrationToServer(token);
+        // Read deviceId from SharedPreferences and then send.
+        SharedPreferences prefs = getSharedPreferences("ChildAppPrefs", MODE_PRIVATE);
+        String deviceId = prefs.getString("pairedChildDeviceId", null); // Use the correct key
+        staticSendRegistrationToServer(getApplicationContext(), token, deviceId);
     }
 
-    private void sendRegistrationToServer(String token) {
-        // Get deviceId from SharedPreferences (saved by MainActivity)
-        SharedPreferences prefs = getSharedPreferences("ChildAppPrefs", MODE_PRIVATE);
-        String deviceId = prefs.getString("deviceId", null);
-
+    // Made static so MainActivity can call it after successful pairing
+    public static void staticSendRegistrationToServer(Context context, String token, String deviceId) {
+        if (token == null || token.isEmpty()) {
+            Log.w(TAG, "Cannot send FCM token to server: token is null or empty.");
+            return;
+        }
         if (deviceId != null && !deviceId.isEmpty()) {
             FirebaseFirestore db = FirebaseFirestore.getInstance();
             Map<String, Object> tokenData = new HashMap<>();
             tokenData.put("fcmToken", token);
-            // Update the existing document for this deviceId in 'locations' collection
-            // Alternatively, use a separate '/devices/{deviceId}' collection if preferred
             db.collection("locations").document(deviceId)
-                    .update(tokenData) // Use update to add/change fcmToken without overwriting other fields
-                    .addOnSuccessListener(aVoid -> Log.d(TAG, "FCM token successfully updated in Firestore for deviceId: " + deviceId))
-                    .addOnFailureListener(e -> Log.w(TAG, "Error updating FCM token in Firestore for deviceId: " + deviceId, e));
+                    .update(tokenData)
+                    .addOnSuccessListener(aVoid -> Log.d(TAG, "FCM token successfully updated in Firestore for deviceId: " + deviceId + " via static method."))
+                    .addOnFailureListener(e -> Log.w(TAG, "Error updating FCM token in Firestore for deviceId: " + deviceId + " via static method.", e));
         } else {
-            Log.w(TAG, "Cannot send FCM token to server: deviceId is null or empty.");
+            Log.w(TAG, "Cannot send FCM token to server: deviceId is null or empty when called from static method.");
         }
+    }
+
+    // Kept original instance method for direct calls within service if needed, though static one is primary now.
+    private void sendRegistrationToServer(String token) {
+        SharedPreferences prefs = getSharedPreferences("ChildAppPrefs", MODE_PRIVATE);
+        String deviceId = prefs.getString("pairedChildDeviceId", null); // Use the correct key
+        staticSendRegistrationToServer(getApplicationContext(), token, deviceId);
     }
 
     @Override

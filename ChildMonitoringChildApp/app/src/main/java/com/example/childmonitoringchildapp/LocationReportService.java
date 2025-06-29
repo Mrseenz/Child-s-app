@@ -69,15 +69,24 @@ public class LocationReportService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "onStartCommand received");
+
         if (intent != null && intent.hasExtra("deviceId")) {
-            this.deviceId = intent.getStringExtra("deviceId"); // Assign to instance variable
-            Log.d(TAG, "Service starting/restarted with deviceId: " + this.deviceId);
-        } else if (this.deviceId == null) { // If service restarted by system and intent is null, deviceId might be null
-             Log.e(TAG, "Service started or restarted without deviceId, stopping.");
-             stopSelf();
-             return START_NOT_STICKY; // Don't restart if we don't have a deviceId
+            this.deviceId = intent.getStringExtra("deviceId");
+            Log.d(TAG, "Service started with deviceId from intent: " + this.deviceId);
+        } else if (this.deviceId == null) {
+            // Service might be restarted by system (START_STICKY)
+            // Try to load deviceId from SharedPreferences if instance variable is null
+            SharedPreferences prefs = getSharedPreferences("ChildAppPrefs", MODE_PRIVATE);
+            this.deviceId = prefs.getString("pairedChildDeviceId", null); // Ensure key matches MainActivity
+            if (this.deviceId != null) {
+                Log.d(TAG, "Service restarted, loaded deviceId from SharedPreferences: " + this.deviceId);
+            } else {
+                Log.e(TAG, "Service restarted or started without deviceId (intent null or no extra, and not in SharedPreferences), stopping.");
+                stopSelf();
+                return START_NOT_STICKY; // Don't restart if we truly don't have a deviceId
+            }
         }
-        // If this.deviceId is already set (e.g. from previous onStartCommand and service is sticky), continue
+        // If this.deviceId was already set from a previous onStartCommand and service is sticky, it will be used.
 
         startForeground(NOTIFICATION_ID, createNotification());
         startLocationUpdates();
